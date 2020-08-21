@@ -8,13 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/vault/sdk/database/newdbplugin"
-
-	"github.com/hashicorp/go-uuid"
-
-	log "github.com/hashicorp/go-hclog"
-
 	"github.com/hashicorp/errwrap"
+	log "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/vault/sdk/database/dbplugin"
 	"github.com/hashicorp/vault/sdk/database/helper/dbutil"
 	"github.com/hashicorp/vault/sdk/framework"
@@ -280,29 +276,6 @@ func (b *databaseBackend) GetConnectionWithConfig(ctx context.Context, name stri
 		name:     name,
 	}
 	return dbi, nil
-}
-
-func initDatabase(ctx context.Context, dbw databaseVersionWrapper, connDetails map[string]interface{}, verifyConnection bool) (newConfig map[string]interface{}, err error) {
-	if dbw.database != nil {
-		return initNewDatabase(ctx, dbw, connDetails, verifyConnection)
-	}
-	return initLegacyDatabase(ctx, dbw, connDetails, verifyConnection)
-}
-
-func initNewDatabase(ctx context.Context, dbw databaseVersionWrapper, connDetails map[string]interface{}, verifyConnection bool) (newConfig map[string]interface{}, err error) {
-	req := newdbplugin.InitializeRequest{
-		Config:           connDetails,
-		VerifyConnection: verifyConnection,
-	}
-	resp, err := dbw.database.Initialize(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Config, nil
-}
-
-func initLegacyDatabase(ctx context.Context, dbw databaseVersionWrapper, connDetails map[string]interface{}, verifyConnection bool) (newConfig map[string]interface{}, err error) {
-	return dbw.legacyDatabase.Init(ctx, connDetails, verifyConnection)
 }
 
 // invalidateQueue cancels any background queue loading and destroys the queue.

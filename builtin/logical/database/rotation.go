@@ -330,7 +330,7 @@ func (b *databaseBackend) setStaticAccount(ctx context.Context, s logical.Storag
 	newPassword := input.Password
 	if newPassword == "" {
 		// Generate a new password
-		newPassword, err = db.GenerateCredentials(ctx)
+		newPassword, err = generatePassword(ctx, b.System(), dbConfig.PasswordPolicy)
 		if err != nil {
 			return output, err
 		}
@@ -355,21 +355,17 @@ func (b *databaseBackend) setStaticAccount(ctx context.Context, s logical.Storag
 		}
 	}
 
-	_, password, err := db.SetCredentials(ctx, input.Role.Statements, config)
+	err = changeUserPassword(ctx, db.database, input.Role.StaticAccount.Username, newPassword, input.Role.Statements.Rotation)
 	if err != nil {
 		b.CloseIfShutdown(db, err)
 		return output, errwrap.Wrapf("error setting credentials: {{err}}", err)
-	}
-
-	if newPassword != password {
-		return output, errors.New("mismatch passwords returned")
 	}
 
 	// Store updated role information
 	// lvr is the known LastVaultRotation
 	lvr := time.Now()
 	input.Role.StaticAccount.LastVaultRotation = lvr
-	input.Role.StaticAccount.Password = password
+	input.Role.StaticAccount.Password = newPassword
 	output.RotationTime = lvr
 
 	entry, err := logical.StorageEntryJSON(databaseStaticRolePath+input.RoleName, input.Role)
